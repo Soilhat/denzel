@@ -37,13 +37,14 @@ app.get('/movies/populate', (req, res) => {
     }
     imdb(DENZEL_IMDB_ID).then((val) => {
         movies = val;
+        collection.deleteMany({})
         collection.insertMany(movies, (error, result) => {
             if (error) {
                 return res.status(500).send(error);
             }
             console.log('populating sucessful of ' + result.result.n + " movies");
-
-            res.send(result.result);
+            retour = { "total" : result.result.n };
+            res.send(retour);
         });
     });
 });
@@ -57,10 +58,31 @@ app.get('/movies', (req, res) => {
             return res.status(500).send(error);
         }
         var index = Math.floor(Math.random() * result.length);
-        var movie = result[index].title;
-        res.send(movie);
-        console.log(result[index]);
+        res.send(result[index]);
+        console.log(result[index].title);
     });
+});
+
+app.get('/movies/search', (req, res) => {
+    if (!collection) {
+        return res.status(500).send('Database not connected');
+    }
+    var limit = (req.query.limit)? +req.query['limit'] : 5;
+    var metascore = (req.query.metascore)? +req.query['metascore'] : 0;
+    collection.find({ metascore: { $gte: metascore } }).toArray((error, result) => {
+        if (error) {
+            return res.status(500).send(error);
+        }
+        var tab = [];
+        console.log(result.length)
+        for (var i = Math.floor(Math.random() * result.length); tab.length < result.length && tab.length < limit; i = Math.floor(Math.random() * result.length)) {
+            if(tab.indexOf(result[i]) == -1){
+                console.log(result[i].title)
+                tab.push(result[i])
+            }
+        }
+        res.send({"limit": limit, "results": tab, "total": tab.length});
+    });  
 });
 
 app.get('/movies/:id', (req, res) => {
@@ -81,6 +103,47 @@ app.get('/movies/:id', (req, res) => {
 
     });
 });
+
+app.post('/movies/:id', (req, res) => {
+    if (!collection) {
+        return res.status(500).send('Database not connected');
+    }
+    var id = req.params.id;
+    collection.find({ id: id }).toArray((error, result) => {
+        if (error) {
+            return res.status(500).send(error);
+        }
+        if (result.length > 0) {
+            var review = req.body;
+            if(result[0].reviews){
+                collection.updateOne({id : id}, { $push: {'reviews' :  review }}, function(err, res) {
+                    if(err){
+                        console.log(err)
+                        throw err;
+                    }
+                    console.log(result[0]);
+                });
+                res.send({ "_id" :result[0]._id});
+            }
+            else {
+                collection.deleteOne({id : id});
+                var movie = result[0];
+                movie.reviews = [ review ];
+                collection.insertOne(movie, (error, result) => {
+                    if (error) {
+                        return res.status(500).send(error);
+                    }
+                    console.log(result.ops[0]);
+                    res.send({ "_id" : result.ops[0]._id});
+                });
+            }
+        }
+        else {
+            res.status(500).send({error : `no match for id : ${id}`});
+        }
+
+    });
+})
 
 app.get('*', (req, res) => {
     res.status(404).send({ error: 'path not found' });
