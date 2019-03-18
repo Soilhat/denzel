@@ -123,7 +123,7 @@ app.post('/movies/:id', (req, res) => {
                     }
                     console.log(result[0]);
                 });
-                res.send({ "_id" :result[0]._id});
+                res.send({ "_id" :result[0]._id, "reviews" : result[0].reviews});
             }
             else {
                 collection.deleteOne({id : id});
