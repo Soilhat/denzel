@@ -7,7 +7,7 @@ const DENZEL_IMDB_ID = 'nm0000243';
 
 
 
-const CONNECTION_URL = "mongodb+srv://root:root@denzelmovies-696nb.mongodb.net/test?retryWrites=true";
+const CONNECTION_URL = "mongodb+srv://client1:client1@cluster0-maf1t.mongodb.net/test?retryWrites=true";
 const DATABASE_NAME = "denzelmovies";
 
 var app = Express();
@@ -27,7 +27,7 @@ MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) =
     }
     console.log('Connected');
     database = client.db(DATABASE_NAME);
-    collection = database.collection("movies");
+    collection = database.collection("test");
     console.log("Connected to `" + DATABASE_NAME + "`!");
 });
 
@@ -81,6 +81,22 @@ app.get('/movies/search', (req, res) => {
                 tab.push(result[i])
             }
         }
+        var f = function(a,b){
+            return a>b ;
+        } 
+        function tri(l,f){
+            for(var i= 0 ; i< l.length; i++){  
+                for(var j=i+1; j< l.length; j++){
+                    if(f( l[j].metascore, l[i].metascore) ){
+                        var temp = l[j];
+                        l[j]=l[i];
+                        l[i]=temp;
+                    }
+                }
+            }
+            return l ;
+        }
+        tab = tri(tab,function(a,b){ return a>b ;})
         res.send({"limit": limit, "results": tab, "total": tab.length});
     });  
 });
@@ -144,6 +160,10 @@ app.post('/movies/:id', (req, res) => {
 
     });
 })
+
+tri(tab) {
+
+}
 
 app.get('*', (req, res) => {
     res.status(404).send({ error: 'path not found' });
