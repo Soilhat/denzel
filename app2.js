@@ -31,6 +31,7 @@ var schema = buildSchema(`
 	  movie: Movie
 	  Getmovie(id: String): Movie
 	  movies(limit: Int, metascore: Int): Search
+	  addReview(id:String, date:String, review:String): Movie
 	}
 
 	type Movie {
@@ -160,7 +161,7 @@ var root = {
 		},
 	//},
 	//mutation: {
-		addReview: (id, revi) => {
+		addReview: (args) => {
 			async function rev(id, rev) {
 				var promise = new Promise((resolve, reject) =>{
 					collection.find({ id: id }).toArray((error, result) => {
@@ -194,8 +195,8 @@ var root = {
 				});
 				return await promise;
 			}
-			console.log(revi.body);
-		    return rev(id.id, revi.revi);
+			var revi = {date: args.date, review:args.review};
+		    return rev(args.id, revi);
 		//}
 	}
 };
